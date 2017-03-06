@@ -11,7 +11,7 @@ PROJECT_AUTHOR = "Rakesh Gariganti"
 
 class Splitter(object):
     LOG_FORMAT = "%(levelname)s: %(message)s"
-    MAX_BUF_SIZE = 50 * 1024
+    MAX_BUF_SIZE = 128 * 1024
     log = None
 
     def __init__(self):
