@@ -4,109 +4,102 @@ import os
 import fire
 
 
-VERSION = 1.0
-NAME = "PyFileSplitter"
-AUTHOR = "Rakesh Gariganti"
+PROJECT_VERSION = 1.0
+PROJECT_NAME = "PyFileSplitter"
+PROJECT_AUTHOR = "Rakesh Gariganti"
 
 
 class Splitter(object):
-    FORMAT = "%(levelname)s: %(message)s"
+    LOG_FORMAT = "%(levelname)s: %(message)s"
     MAX_BUF_SIZE = 50 * 1024
     log = None
 
     def __init__(self):
-        logging.basicConfig(level=logging.DEBUG, format=self.FORMAT)
-        self.log = logging.getLogger(NAME)
+        logging.basicConfig(level=logging.DEBUG, format=self.LOG_FORMAT)
+        self.log = logging.getLogger(PROJECT_NAME)
 
-    def split(self, filepath, parts):
+    def split(self, file_path, num_parts):
         """
-        Splits the given file into given parts
+        Splits the given file into given num_parts
         """
-        self.log.info("Splitting " + filepath)
-        if os.path.isfile(filepath):
-            self.log.info("File size: %s , splitting into %d parts" % (
-                os.path.getsize(filepath), parts))
+        self.log.info("Splitting " + file_path)
+        if os.path.isfile(file_path):
+            self.log.info("File size: %d bytes, splitting into %d num_parts" % (
+                os.path.getsize(file_path), num_parts))
         else:
-            self.log.error("%s is not a file" % (filepath))
+            self.log.error("%s is not a file" % (file_path))
             return 1
-        size = os.path.getsize(filepath)
-        offset = (size / parts)
-        g_c = 0
+        size = os.path.getsize(file_path)
+        offset = (size / num_parts)
+        bytes_written = 0
         self.log.info("Each splitted file's size : " + str(offset))
-        with open(filepath, 'rb') as f:
+        with open(file_path, 'rb') as source_file:
             buf_size = min(offset, self.MAX_BUF_SIZE)
             self.log.info("Buffer size : " + str(buf_size))
-            for i in xrange(parts):
-                self.log.info("Writing part-%d" % (i + 1))
-                pointer = 0
-                with open(filepath + "_" + str(i + 1), 'w') as w:
-                    while pointer < offset:
-                        if (offset - pointer) < buf_size:
-                            buf = f.read(offset - pointer)
+            for each_part in xrange(num_parts):
+                self.log.info("Writing part-%d" % (each_part + 1))
+                read_pointer = 0
+                with open(file_path + "_" + str(each_part + 1), 'w') as dest_file:
+                    while read_pointer < offset:
+                        if (offset - read_pointer) < buf_size:
+                            buf = source_file.read(offset - read_pointer)
                         else:
-                            buf = f.read(buf_size)
-                        w.write(buf)
-                        pointer += len(buf)
-                    self.log.info("Written %d bytes" % (pointer))
-                    g_c += pointer
-                    w.flush()
-                print
-        self.log.info("Written " + str(g_c))
+                            buf = source_file.read(buf_size)
+                        dest_file.write(buf)
+                        read_pointer += len(buf)
+                    self.log.info("Written %d bytes" % (read_pointer))
+                    bytes_written += read_pointer
+                    dest_file.flush()
+        self.log.info("Written " + str(bytes_written))
         self.log.info("Successfully split the file")
 
-    def join(self, firstfilepath):
+    def join(self, first_file_path):
         """
         Joins the files starting with firstfile into filename_joined
         """
-        self.log.info("Joining " + firstfilepath)
-        filename = "".join(os.path.basename(firstfilepath).split('_')[:-1])
-        filename_without_ext = os.path.splitext(filename)[0] or ""
-        extension = os.path.splitext(filename)[1] or ""
-        dirlist = os.listdir(os.path.dirname(firstfilepath))
+        self.log.info("Joining " + first_file_path)
+        file_name = "".join(os.path.basename(first_file_path).split('_')[:-1])
+        filename_without_ext = os.path.splitext(file_name)[0] or ""
+        extension = os.path.splitext(file_name)[1] or ""
+        dir_name = os.path.dirname(first_file_path)
+        if dir_name == "":
+            dir_name = "./"
+        dirlist = os.listdir(dir_name)
         last_file_index = 1
         for i in dirlist:
-            if filename + "_" in i:
+            if file_name + "_" in i:
                 file_index = int(i.split("_")[-1])
                 if file_index > last_file_index:
                     last_file_index = file_index
         self.log.info(
             "Total files found in the given directory: " + str(last_file_index))
-        destfilename = filename_without_ext + "_joined" + extension
-        g_c = 0
-        with open(destfilename, 'wb') as f:
-            self.log.info("Writting to " + destfilename)
-            for i in xrange(1, last_file_index+1):
-                this_file = filename + "_" + str(i)
-                os_filename = os.path.join(
-                    os.path.dirname(firstfilepath), this_file)
-                self.log.info("Reading from " + this_file)
-                with open(os_filename, 'rb') as s:
-                    s_size = os.path.getsize(os_filename)
-                    self.log.info("File size of " + str(i) +
-                                  " is : " + str(s_size))
-                    buf_size = min(s_size, self.MAX_BUF_SIZE)
-                    pointer = 0
-                    while pointer < s_size:
-                        if (s_size - pointer) < buf_size:
-                            buf = s.read(s_size - pointer)
+        dest_file_name = filename_without_ext + "_joined" + extension
+        bytes_written = 0
+        with open(dest_file_name, 'wb') as dest_file:
+            self.log.info("Writting to " + dest_file_name)
+            for i in xrange(1, last_file_index + 1):
+                source_file_name = file_name + "_" + str(i)
+                source_file_path = os.path.join(
+                    os.path.dirname(first_file_path), source_file_name)
+                self.log.info("Reading from " + source_file_path)
+                with open(source_file_path, 'rb') as source_file:
+                    source_file_size = os.path.getsize(source_file_path)
+                    self.log.info("File size of " + source_file_path +
+                                  " is : " + str(source_file_size))
+                    buf_size = min(source_file_size, self.MAX_BUF_SIZE)
+                    read_pointer = 0
+                    while read_pointer < source_file_size:
+                        if (source_file_size - read_pointer) < buf_size:
+                            buf = source_file.read(
+                                source_file_size - read_pointer)
                         else:
-                            buf = s.read(buf_size)
-                        f.write(buf)
-                        pointer += len(buf)
-                    g_c += pointer
-                print
-            self.log.info("Written %d bytes to %s" % (g_c, destfilename))
-            f.flush()
-
-    def _convert_bytes(self, num):
-        """
-        this function will convert bytes to MB.... GB... etc till TBs
-        """
-        for x in ['bytes', 'KB', 'MB', 'GB', 'TB']:
-            if num < 1024.0:
-                return "%3.1f %s" % (num, x)
-            num /= 1024.0
-
+                            buf = source_file.read(buf_size)
+                        dest_file.write(buf)
+                        read_pointer += len(buf)
+                    bytes_written += read_pointer
+            self.log.info("Written %d bytes to %s" %
+                          (bytes_written, dest_file_name))
+            dest_file.flush()
 
 if __name__ == "__main__":
     fire.Fire(Splitter)
