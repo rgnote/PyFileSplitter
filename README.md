@@ -3,7 +3,8 @@ A python tool to split a file into smaller ones and re-join them. The motivation
 
 # Usage   
 Install the requirements with the command `pip install -r requirements.txt`   
+(You might want to install the dependencies in a isolated env with VirtualEnv)
 
-Split a file   : `$ python Splitter.py split <<path to the file>> <<number of splits>>`   
-Join the files : `$ python Splitter.py split <<path to the first split file>>`
+Split a file   : `$ python Splitter.py split <path to the file> <number of splits>`   
+Join the files : `$ python Splitter.py join <path to the first split file>`
 
